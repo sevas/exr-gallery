@@ -7,7 +7,10 @@ function ExrImage({ src, alt }) {
   const [error, setError] = useState(null)
   const [loadTime, setLoadTime] = useState(null)
   const [resolution, setResolution] = useState(null)
+  const [exposure, setExposure] = useState(1.0)
+  const [textureData, setTextureData] = useState(null)
 
+  // Load EXR file
   useEffect(() => {
     const loadExr = async () => {
       const startTime = performance.now()
@@ -22,40 +25,12 @@ function ExrImage({ src, alt }) {
         loader.load(
           src,
           (texture) => {
-            const canvas = canvasRef.current
-            if (!canvas) return
-
-            const width = texture.image.width
-            const height = texture.image.height
-            
-            canvas.width = width
-            canvas.height = height
-            
-            const ctx = canvas.getContext('2d')
-            const imageData = ctx.createImageData(width, height)
-            
-            const data = texture.image.data
-            const exposure = 2.0 // Adjust brightness
-            
-            // Convert Float32Array to Uint8ClampedArray with tone mapping
-            for (let i = 0; i < width * height; i++) {
-              const idx = i * 4
-              const r = data[idx] * exposure * 255
-              const g = data[idx + 1] * exposure * 255
-              const b = data[idx + 2] * exposure * 255
-              
-              imageData.data[idx] = Math.min(255, Math.max(0, r))
-              imageData.data[idx + 1] = Math.min(255, Math.max(0, g))
-              imageData.data[idx + 2] = Math.min(255, Math.max(0, b))
-              imageData.data[idx + 3] = 255 // Alpha
-            }
-            
-            ctx.putImageData(imageData, 0, 0)
+            setTextureData(texture)
+            setResolution(`${texture.image.width} × ${texture.image.height}`)
             
             const endTime = performance.now()
             const timeInSeconds = ((endTime - startTime) / 1000).toFixed(2)
             setLoadTime(timeInSeconds)
-            setResolution(`${width} × ${height}`)
             setLoading(false)
           },
           undefined,
@@ -74,6 +49,38 @@ function ExrImage({ src, alt }) {
 
     loadExr()
   }, [src])
+
+  // Render with current exposure
+  useEffect(() => {
+    if (!textureData || !canvasRef.current) return
+
+    const canvas = canvasRef.current
+    const width = textureData.image.width
+    const height = textureData.image.height
+    
+    canvas.width = width
+    canvas.height = height
+    
+    const ctx = canvas.getContext('2d')
+    const imageData = ctx.createImageData(width, height)
+    
+    const data = textureData.image.data
+    
+    // Convert Float32Array to Uint8ClampedArray with tone mapping
+    for (let i = 0; i < width * height; i++) {
+      const idx = i * 4
+      const r = data[idx] * exposure * 255
+      const g = data[idx + 1] * exposure * 255
+      const b = data[idx + 2] * exposure * 255
+      
+      imageData.data[idx] = Math.min(255, Math.max(0, r))
+      imageData.data[idx + 1] = Math.min(255, Math.max(0, g))
+      imageData.data[idx + 2] = Math.min(255, Math.max(0, b))
+      imageData.data[idx + 3] = 255 // Alpha
+    }
+    
+    ctx.putImageData(imageData, 0, 0)
+  }, [textureData, exposure])
 
   return (
     <div style={{ position: 'relative', minHeight: '400px' }}>
@@ -107,18 +114,53 @@ function ExrImage({ src, alt }) {
           display: loading ? 'none' : 'block'
         }}
       />
-      {(loadTime || resolution) && (
+      {(loadTime || resolution || textureData) && (
         <div style={{ 
           marginTop: '10px',
           color: '#888',
           fontSize: '0.9rem',
           textAlign: 'center',
           display: 'flex',
-          gap: '20px',
-          justifyContent: 'center'
+          flexDirection: 'column',
+          gap: '10px',
+          alignItems: 'center'
         }}>
-          {resolution && <span>Resolution: {resolution}</span>}
-          {loadTime && <span>Load time: {loadTime}s</span>}
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+            {resolution && <span>Resolution: {resolution}</span>}
+            {loadTime && <span>Load time: {loadTime}s</span>}
+          </div>
+          {textureData && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <label htmlFor="exposure-slider" style={{ fontWeight: '500' }}>
+                Exposure:
+              </label>
+              <input
+                id="exposure-slider"
+                type="range"
+                min="0.1"
+                max="10"
+                step="0.1"
+                value={exposure}
+                onChange={(e) => setExposure(parseFloat(e.target.value))}
+                style={{ width: '200px' }}
+              />
+              <span style={{ minWidth: '40px' }}>{exposure.toFixed(1)}</span>
+              <button
+                onClick={() => setExposure(1.0)}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  backgroundColor: '#646cff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px'
+                }}
+              >
+                Reset
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
