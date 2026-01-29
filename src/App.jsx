@@ -46,12 +46,6 @@ function App() {
     <div className="app-container">
       <h1>Image Gallery</h1>
       <div className="carousel">
-        <div className="image-container">
-          <ExrImage 
-            src={images[currentIndex]} 
-            alt={`Gallery image ${currentIndex + 1}`} 
-          />
-        </div>
         <div className="nav-buttons">
           <button className="nav-button prev" onClick={goToPrevious}>
             ❮
@@ -63,6 +57,12 @@ function App() {
         <button className={`autoplay-button ${isAutoplay ? 'active' : ''}`} onClick={toggleAutoplay}>
           {isAutoplay ? '⏸ Pause' : '▶ Autoplay'}
         </button>
+        <div className="image-container">
+          <ExrImage 
+            src={images[currentIndex]} 
+            alt={`Gallery image ${currentIndex + 1}`} 
+          />
+        </div>
       </div>
       <p className="description">
         Image {currentIndex + 1} of {images.length}
