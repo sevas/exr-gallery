@@ -2,6 +2,8 @@
 
 A web-based image gallery for viewing OpenEXR (HDR) images. Built with React and Vite, this application allows you to browse through a collection of EXR files with carousel navigation and autoplay functionality.
 
+🔗 **Live Demo:** https://sevas.github.io/exr-gallery/
+
 ## Features
 
 - 🖼️ **EXR Image Support** - Display OpenEXR high dynamic range images in the browser
