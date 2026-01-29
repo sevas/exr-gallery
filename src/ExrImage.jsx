@@ -58,20 +58,33 @@ function ExrImage({ src, alt }) {
     const width = textureData.image.width
     const height = textureData.image.height
     
-    canvas.width = width
-    canvas.height = height
+    // Only set dimensions if they've changed
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width
+      canvas.height = height
+    }
     
     const ctx = canvas.getContext('2d')
     const imageData = ctx.createImageData(width, height)
     
     const data = textureData.image.data
     
+    // Find max value for normalization
+    let maxVal = 0
+    for (let i = 0; i < width * height * 4; i++) {
+      if (data[i] > maxVal) maxVal = data[i]
+    }
+    
     // Convert Float32Array to Uint8ClampedArray with tone mapping
+    // Normalize by max value, then apply exposure
+    const normalizationFactor = maxVal > 1 ? maxVal : 1
+    
     for (let i = 0; i < width * height; i++) {
       const idx = i * 4
-      const r = data[idx] * exposure * 255
-      const g = data[idx + 1] * exposure * 255
-      const b = data[idx + 2] * exposure * 255
+      // Normalize to 0-1 range, apply exposure, then scale to 0-255
+      const r = (data[idx] / normalizationFactor) * exposure * 255
+      const g = (data[idx + 1] / normalizationFactor) * exposure * 255
+      const b = (data[idx + 2] / normalizationFactor) * exposure * 255
       
       imageData.data[idx] = Math.min(255, Math.max(0, r))
       imageData.data[idx + 1] = Math.min(255, Math.max(0, g))
