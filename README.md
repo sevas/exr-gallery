@@ -73,6 +73,10 @@ const images = [
 ]
 ```
 
+---
+
+**Note:** This app was built with help from GitHub Copilot - turns out AI is pretty good at coding! 🤖✨
+
 ## License
 
 MIT
