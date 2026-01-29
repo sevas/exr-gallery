@@ -77,6 +77,11 @@ function App() {
         <button className={`autoplay-button ${isAutoplay ? 'active' : ''}`} onClick={toggleAutoplay}>
           {isAutoplay ? '⏸ Pause' : '▶ Autoplay'}
         </button>
+        <p className="description" style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
+          <span style={{ fontWeight: '600', color: '#646cff', fontSize: '1.1rem' }}>
+            {images[currentIndex].split('/').pop()}
+          </span>
+        </p>
         <div className="image-container">
           <ExrImage 
             src={images[currentIndex]} 
@@ -93,10 +98,6 @@ function App() {
         </div>
       </div>
       <p className="description">
-        <span style={{ fontWeight: '600', color: '#646cff' }}>
-          {images[currentIndex].split('/').pop()}
-        </span>
-        {' '} • {' '}
         Image {currentIndex + 1} of {images.length}
       </p>
     </div>
