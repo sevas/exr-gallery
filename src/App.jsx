@@ -4,11 +4,11 @@ import ExrImage from './ExrImage'
 
 function App() {
   const images = [
-    '/image1.exr',
-    '/image2.exr',
-    '/image3.exr',
-    '/image4.exr',
-    '/image5.exr'
+    `${import.meta.env.BASE_URL}image1.exr`,
+    `${import.meta.env.BASE_URL}image2.exr`,
+    `${import.meta.env.BASE_URL}image3.exr`,
+    `${import.meta.env.BASE_URL}image4.exr`,
+    `${import.meta.env.BASE_URL}image5.exr`
   ]
 
   const [currentIndex, setCurrentIndex] = useState(0)
