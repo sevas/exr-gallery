@@ -27,12 +27,14 @@ function App() {
   }, [isAutoplay, images.length])
 
   const goToPrevious = () => {
+    setIsAutoplay(false)
     setCurrentIndex((prevIndex) => 
       prevIndex === 0 ? images.length - 1 : prevIndex - 1
     )
   }
 
   const goToNext = () => {
+    setIsAutoplay(false)
     setCurrentIndex((prevIndex) => 
       prevIndex === images.length - 1 ? 0 : prevIndex + 1
     )
@@ -41,6 +43,32 @@ function App() {
   const toggleAutoplay = () => {
     setIsAutoplay(!isAutoplay)
   }
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      switch(e.key) {
+        case ' ':
+        case 'Spacebar':
+          e.preventDefault()
+          toggleAutoplay()
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          goToPrevious()
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          goToNext()
+          break
+        default:
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isAutoplay, currentIndex])
 
   return (
     <div className="app-container">
