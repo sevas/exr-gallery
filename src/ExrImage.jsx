@@ -9,6 +9,7 @@ function ExrImage({ src, alt }) {
   const [resolution, setResolution] = useState(null)
   const [exposure, setExposure] = useState(1.0)
   const [textureData, setTextureData] = useState(null)
+  const [renderTime, setRenderTime] = useState(null)
 
   // Load EXR file
   useEffect(() => {
@@ -54,6 +55,8 @@ function ExrImage({ src, alt }) {
   useEffect(() => {
     if (!textureData || !canvasRef.current) return
 
+    const renderStart = performance.now()
+
     const canvas = canvasRef.current
     const width = textureData.image.width
     const height = textureData.image.height
@@ -93,6 +96,10 @@ function ExrImage({ src, alt }) {
     }
     
     ctx.putImageData(imageData, 0, 0)
+
+    const renderEnd = performance.now()
+    const renderTimeSeconds = ((renderEnd - renderStart) / 1000).toFixed(3)
+    setRenderTime(renderTimeSeconds)
   }, [textureData, exposure])
 
   return (
@@ -141,6 +148,7 @@ function ExrImage({ src, alt }) {
           <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
             {resolution && <span>Resolution: {resolution}</span>}
             {loadTime && <span>Load time: {loadTime}s</span>}
+            {renderTime && <span>Render time: {renderTime}s</span>}
           </div>
           {textureData && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
