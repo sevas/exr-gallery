@@ -46,14 +46,6 @@ function App() {
     <div className="app-container">
       <h1>Image Gallery</h1>
       <div className="carousel">
-        <div className="nav-buttons">
-          <button className="nav-button prev" onClick={goToPrevious}>
-            ❮
-          </button>
-          <button className="nav-button next" onClick={goToNext}>
-            ❯
-          </button>
-        </div>
         <button className={`autoplay-button ${isAutoplay ? 'active' : ''}`} onClick={toggleAutoplay}>
           {isAutoplay ? '⏸ Pause' : '▶ Autoplay'}
         </button>
@@ -62,6 +54,14 @@ function App() {
             src={images[currentIndex]} 
             alt={`Gallery image ${currentIndex + 1}`} 
           />
+        </div>
+        <div className="nav-buttons">
+          <button className="nav-button prev" onClick={goToPrevious}>
+            ❮
+          </button>
+          <button className="nav-button next" onClick={goToNext}>
+            ❯
+          </button>
         </div>
       </div>
       <p className="description">
