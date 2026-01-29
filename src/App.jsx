@@ -93,6 +93,10 @@ function App() {
         </div>
       </div>
       <p className="description">
+        <span style={{ fontWeight: '600', color: '#646cff' }}>
+          {images[currentIndex].split('/').pop()}
+        </span>
+        {' '} • {' '}
         Image {currentIndex + 1} of {images.length}
       </p>
     </div>
