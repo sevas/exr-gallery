@@ -1,0 +1,126 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.app-container h1 {
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
+  color: #646cff;
+}
+
+.carousel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+}
+
+.nav-button {
+  background-color: #646cff;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.nav-button:hover {
+  background-color: #535bf2;
+  transform: scale(1.1);
+}
+
+.nav-button:active {
+  transform: scale(0.95);
+}
+
+.autoplay-button {
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+.autoplay-button:hover {
+  background-color: #229954;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.autoplay-button.active {
+  background-color: #e74c3c;
+}
+
+.autoplay-button.active:hover {
+  background-color: #c0392b;
+}
+
+.image-container {
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-width: 600px;
+}
+
+.image-container img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+}
+
+.description {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  color: #888;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .carousel {
+    gap: 1rem;
+  }
+
+  .nav-button {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+
+  .image-container {
+    min-width: auto;
+    max-width: 100%;
+  }
+}
