@@ -1,5 +1,5 @@
 #root {
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
@@ -9,11 +9,47 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 60vh;
+  min-height: 80vh;
 }
 
-.app-container h1 {
+/* Navigation */
+.main-nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 30px;
+}
+
+.nav-link {
+  padding: 0.75rem 1.5rem;
+  border-radius: 20px;
+  text-decoration: none;
+  color: #888;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #646cff;
+  background-color: rgba(100, 108, 255, 0.1);
+}
+
+.nav-link.active {
+  color: white;
+  background-color: #646cff;
+}
+
+/* Gallery Styles */
+.gallery-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.gallery-container h1 {
   margin-bottom: 2rem;
   font-size: 2.5rem;
   color: #646cff;
@@ -108,6 +144,193 @@
   font-weight: 500;
 }
 
+/* Comparator Styles */
+.comparator-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.comparator-container h1 {
+  margin-bottom: 1.5rem;
+  font-size: 2.5rem;
+  color: #646cff;
+}
+
+.image-selectors {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.selector-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.selector-wrapper label {
+  font-size: 0.9rem;
+  color: #888;
+  font-weight: 600;
+}
+
+.selector-wrapper select {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 2px solid #444;
+  background-color: #1a1a1a;
+  color: white;
+  font-size: 0.9rem;
+  min-width: 200px;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+.selector-wrapper select:hover,
+.selector-wrapper select:focus {
+  border-color: #646cff;
+  outline: none;
+}
+
+.comparator-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.zoom-controls button {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background-color: #646cff;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zoom-controls button:hover {
+  background-color: #535bf2;
+  transform: scale(1.05);
+}
+
+.zoom-controls .reset-btn {
+  width: auto;
+  padding: 0 1rem;
+  font-size: 0.9rem;
+}
+
+.zoom-level {
+  min-width: 60px;
+  text-align: center;
+  font-weight: 600;
+  color: #888;
+}
+
+.controls-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}
+
+.resolution-warning {
+  background-color: rgba(231, 76, 60, 0.2);
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.comparison-grid {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.comparison-grid.grid-1 {
+  grid-template-columns: 1fr;
+}
+
+.comparison-grid.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.comparison-grid.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.comparison-grid.grid-4 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.comparison-view {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 2px solid #333;
+}
+
+.comparison-view:hover {
+  border-color: #646cff;
+}
+
+.image-label {
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.image-viewport {
+  width: 100%;
+  height: 300px;
+  overflow: hidden;
+  position: relative;
+  background-color: #111;
+}
+
+.image-viewport img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+  max-width: none;
+  user-select: none;
+  margin-top: -50%;
+  margin-left: -50%;
+}
+
+.no-images-message {
+  padding: 4rem 2rem;
+  color: #666;
+  font-size: 1.1rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 2px dashed #444;
+}
+
 @media (max-width: 768px) {
   .carousel {
     gap: 1rem;
@@ -122,5 +345,15 @@
   .image-container {
     min-width: auto;
     max-width: 100%;
+  }
+
+  .image-selectors {
+    flex-direction: column;
+  }
+
+  .comparison-grid.grid-2,
+  .comparison-grid.grid-3,
+  .comparison-grid.grid-4 {
+    grid-template-columns: 1fr;
   }
 }
