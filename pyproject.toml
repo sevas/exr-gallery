@@ -1,0 +1,23 @@
+[project]
+authors = [{name = "Frederic De Groef", email = "f.degroef@gmail.com"}]
+dependencies = []
+name = "hello_nodeapp"
+requires-python = ">= 3.11"
+version = "0.1.0"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[tool.pixi.pypi-dependencies]
+hello_nodeapp = { path = ".", editable = true }
+
+[tool.pixi.tasks]
+
+[tool.pixi.dependencies]
+pillow = ">=12.2.0,<13"
+requests = ">=2.33.1,<3"

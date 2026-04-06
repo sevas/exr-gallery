@@ -27,6 +27,7 @@ function Comparator() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   
   const containerRefs = useRef([])
+  const gridRef = useRef(null)
 
   // Get active (non-null) image count
   const activeImageCount = selectedImages.filter(img => img !== null).length
@@ -83,12 +84,21 @@ function Comparator() {
     }
   }, [imageResolutions])
 
-  // Mouse wheel zoom
-  const handleWheel = useCallback((e) => {
-    e.preventDefault()
-    const delta = e.deltaY > 0 ? -0.1 : 0.1
-    setZoom(prev => Math.min(Math.max(prev + delta, 0.5), 5))
-  }, [])
+  // Mouse wheel zoom - use native event listener with passive: false to prevent scroll
+  useEffect(() => {
+    const grid = gridRef.current
+    if (!grid) return
+
+    const handleWheel = (e) => {
+      e.preventDefault()
+      const step = e.ctrlKey ? 1 : 0.1
+      const delta = e.deltaY > 0 ? -step : step
+      setZoom(prev => Math.min(Math.max(prev + delta, 0.5), 50))
+    }
+
+    grid.addEventListener('wheel', handleWheel, { passive: false })
+    return () => grid.removeEventListener('wheel', handleWheel)
+  }, [activeImageCount])
 
   // Mouse drag for panning
   const handleMouseDown = useCallback((e) => {
@@ -127,7 +137,7 @@ function Comparator() {
           break
         case '+':
         case '=':
-          setZoom(prev => Math.min(prev + 0.2, 5))
+          setZoom(prev => Math.min(prev + 0.2, 50))
           break
         case '-':
           setZoom(prev => Math.max(prev - 0.2, 0.5))
@@ -170,7 +180,7 @@ function Comparator() {
         <div className="zoom-controls">
           <button onClick={() => setZoom(prev => Math.max(prev - 0.2, 0.5))}>−</button>
           <span className="zoom-level">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(prev => Math.min(prev + 0.2, 5))}>+</button>
+          <button onClick={() => setZoom(prev => Math.min(prev + 0.2, 50))}>+</button>
           <button onClick={resetView} className="reset-btn">Reset</button>
         </div>
         <p className="controls-hint">
@@ -188,12 +198,12 @@ function Comparator() {
       {/* Comparison Grid */}
       {activeImageCount > 0 ? (
         <div 
+          ref={gridRef}
           className={`comparison-grid ${getGridClass()}`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          onWheel={handleWheel}
         >
           {selectedImages.map((img, index) => 
             img && (
@@ -209,7 +219,7 @@ function Comparator() {
                     alt={`Comparison ${index + 1}`}
                     onLoad={(e) => handleImageLoad(index, e)}
                     style={{
-                      transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                      transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
                       cursor: isDragging ? 'grabbing' : 'grab'
                     }}
                     draggable={false}
