@@ -76,6 +76,8 @@ function HistogramDisplay({ histogram, onClose }) {
     const ctx = canvas.getContext('2d')
     const width = canvas.width
     const height = canvas.height
+    const leftMargin = 40
+    const bottomMargin = 20
     
     // Clear
     ctx.fillStyle = '#1a1a1a'
@@ -91,8 +93,9 @@ function HistogramDisplay({ histogram, onClose }) {
     
     if (maxCount === 0) return
     
-    const barWidth = width / 256
-    const plotHeight = height - 20
+    const plotWidth = width - leftMargin
+    const plotHeight = height - bottomMargin
+    const barWidth = plotWidth / 256
     
     // Draw histogram bars
     const drawChannel = (data, color) => {
@@ -101,7 +104,7 @@ function HistogramDisplay({ histogram, onClose }) {
         const barHeight = (data[i] / maxCount) * plotHeight
         if (barHeight > 0) {
           ctx.fillRect(
-            Math.floor(i * barWidth), 
+            leftMargin + Math.floor(i * barWidth), 
             plotHeight - barHeight, 
             Math.max(1, Math.floor(barWidth)), 
             barHeight
@@ -124,10 +127,17 @@ function HistogramDisplay({ histogram, onClose }) {
     // Draw axis labels
     ctx.fillStyle = '#888'
     ctx.font = '10px monospace'
+    
+    // X-axis labels (value range)
     ctx.textAlign = 'left'
-    ctx.fillText(histogram.min.toFixed(2), 2, height - 4)
+    ctx.fillText(histogram.min.toFixed(2), leftMargin, height - 4)
     ctx.textAlign = 'right'
     ctx.fillText(histogram.max.toFixed(2), width - 2, height - 4)
+    
+    // Y-axis labels (count)
+    ctx.textAlign = 'right'
+    ctx.fillText(maxCount.toString(), leftMargin - 4, 12)
+    ctx.fillText('0', leftMargin - 4, plotHeight)
   }, [histogram])
   
   if (!histogram) return null
