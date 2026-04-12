@@ -570,6 +570,7 @@
   display: block;
   width: 250px;
   height: 80px;
+  image-rendering: pixelated;
 }
 
 .histogram-stats {
