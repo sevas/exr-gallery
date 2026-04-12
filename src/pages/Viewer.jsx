@@ -160,7 +160,7 @@ function HistogramDisplay({ histogram, index, onClose }) {
         <span style={{ color: '#000' }}>ROI {index + 1} ({histogram.numPixels} px)</span>
         <button onClick={() => onClose(index)} style={{ color: '#000' }}>×</button>
       </div>
-      <canvas ref={canvasRef} width={200} height={60} />
+      <canvas ref={canvasRef} width={250} height={80} />
       <div className="histogram-stats">
         <span>μ={formatStat(histogram.mean)}</span>
         <span>σ={formatStat(histogram.stdDev)}</span>
@@ -678,6 +678,13 @@ function Viewer() {
 
   const handleMouseUp = useCallback(() => {
     if (isSelecting && currentSelection) {
+      // Limit to 10 ROIs (5 per column × 2 columns)
+      if (selections.length >= 10) {
+        setCurrentSelection(null)
+        setIsDragging(false)
+        setIsSelecting(false)
+        return
+      }
       // Add new selection and compute its histogram
       const newHistogram = computeSingleHistogram(currentSelection)
       setSelections(prev => [...prev, currentSelection])
@@ -686,7 +693,7 @@ function Viewer() {
     }
     setIsDragging(false)
     setIsSelecting(false)
-  }, [isSelecting, currentSelection])
+  }, [isSelecting, currentSelection, selections.length])
 
   const handleMouseLeave = useCallback(() => {
     setIsDragging(false)

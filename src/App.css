@@ -529,26 +529,29 @@
   bottom: 10px;
   right: 10px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row-reverse;
+  flex-wrap: wrap-reverse;
+  align-content: flex-start;
+  gap: 6px;
+  max-width: 520px;
   max-height: calc(100% - 20px);
-  overflow-y: auto;
 }
 
 .histogram-panel {
   background-color: rgba(0, 0, 0, 0.9);
-  border-radius: 4px;
-  border: 1px solid #444;
+  border-radius: 6px;
+  border: 2px solid #444;
   overflow: hidden;
+  width: 250px;
 }
 
 .histogram-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.2rem 0.4rem;
+  padding: 0.3rem 0.5rem;
   background-color: #333;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: #ccc;
 }
 
@@ -556,9 +559,9 @@
   background: none;
   border: none;
   color: #888;
-  font-size: 0.9rem;
+  font-size: 1rem;
   cursor: pointer;
-  padding: 0 0.2rem;
+  padding: 0 0.3rem;
 }
 
 .histogram-header button:hover {
@@ -572,9 +575,9 @@
 .histogram-stats {
   display: flex;
   justify-content: space-around;
-  padding: 0.15rem 0.3rem;
+  padding: 0.25rem 0.4rem;
   background-color: #222;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-family: monospace;
   color: #aaa;
 }
