@@ -142,10 +142,12 @@ function HistogramDisplay({ histogram, onClose }) {
   
   if (!histogram) return null
   
+  const regionText = histogram.numRegions > 1 ? ` in ${histogram.numRegions} ROIs` : ''
+  
   return (
     <div className="histogram-panel">
       <div className="histogram-header">
-        <span>Histogram ({histogram.numPixels} pixels)</span>
+        <span>Histogram ({histogram.numPixels} px{regionText})</span>
         <button onClick={onClose}>×</button>
       </div>
       <canvas ref={canvasRef} width={512} height={140} />
@@ -229,9 +231,10 @@ function Viewer() {
   const [mousePos, setMousePos] = useState(null)
   const [pixelValue, setPixelValue] = useState(null)
 
-  // Rectangle selection state
+  // Rectangle selection state (multiple ROIs)
   const [selectionMode, setSelectionMode] = useState(false)
-  const [selection, setSelection] = useState(null) // {x1, y1, x2, y2} in image coords
+  const [selections, setSelections] = useState([]) // Array of {x1, y1, x2, y2}
+  const [currentSelection, setCurrentSelection] = useState(null) // Current drawing selection
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionStart, setSelectionStart] = useState(null)
   const [histogram, setHistogram] = useState(null)
@@ -487,23 +490,30 @@ function Viewer() {
     ctx.imageSmoothingEnabled = zoom < 4
     ctx.drawImage(tempCanvas, 0, 0, outputWidth, outputHeight)
 
-    // Draw selection rectangle if exists
-    if (selection) {
-      const x1 = (selection.x1 - width / 2) * zoom + canvas.width / 2 + pan.x
-      const y1 = (selection.y1 - height / 2) * zoom + canvas.height / 2 + pan.y
-      const x2 = (selection.x2 - width / 2) * zoom + canvas.width / 2 + pan.x
-      const y2 = (selection.y2 - height / 2) * zoom + canvas.height / 2 + pan.y
+    ctx.restore()
+
+    // Draw all selection rectangles
+    const drawRect = (sel, color) => {
+      const x1 = (sel.x1 - width / 2) * zoom + canvas.width / 2 + pan.x
+      const y1 = (sel.y1 - height / 2) * zoom + canvas.height / 2 + pan.y
+      const x2 = (sel.x2 - width / 2) * zoom + canvas.width / 2 + pan.x
+      const y2 = (sel.y2 - height / 2) * zoom + canvas.height / 2 + pan.y
       
-      ctx.restore()
-      ctx.strokeStyle = '#00ff00'
+      ctx.strokeStyle = color
       ctx.lineWidth = 2
       ctx.setLineDash([5, 5])
       ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
       ctx.setLineDash([])
-    } else {
-      ctx.restore()
     }
-  }, [imageData, zoom, pan, minLevel, maxLevel, colormap, selection, bayerChannel])
+
+    // Draw confirmed selections in green
+    selections.forEach(sel => drawRect(sel, '#00ff00'))
+    
+    // Draw current selection being drawn in yellow
+    if (currentSelection) {
+      drawRect(currentSelection, '#ffff00')
+    }
+  }, [imageData, zoom, pan, minLevel, maxLevel, colormap, selections, currentSelection, bayerChannel])
 
   // Helper to convert canvas coords to image coords
   const canvasToImageCoords = useCallback((canvasX, canvasY) => {
@@ -515,7 +525,7 @@ function Viewer() {
   }, [pan, zoom, imageData])
 
   // Mouse handlers for pan and selection
-  // Space + drag = pan (even in selection mode)
+  // Shift + drag = pan (even in selection mode)
   // In selection mode: drag = draw rectangle
   // Otherwise: drag = pan
   const handleMouseDown = useCallback((e) => {
@@ -526,7 +536,7 @@ function Viewer() {
     const canvasX = e.clientX - rect.left
     const canvasY = e.clientY - rect.top
     
-    // Space key held = always pan
+    // Shift key held = always pan
     if (e.shiftKey) {
       setIsDragging(true)
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
@@ -534,13 +544,12 @@ function Viewer() {
     }
     
     if (selectionMode && imageData) {
-      // Start selection
+      // Start new selection
       const imgCoords = canvasToImageCoords(canvasX, canvasY)
       if (imgCoords) {
         setIsSelecting(true)
         setSelectionStart(imgCoords)
-        setSelection(null)
-        setHistogram(null)
+        setCurrentSelection(null)
       }
     } else {
       // Start panning
@@ -561,7 +570,7 @@ function Viewer() {
     if (isSelecting && selectionStart) {
       const imgCoords = canvasToImageCoords(canvasX, canvasY)
       if (imgCoords) {
-        setSelection({
+        setCurrentSelection({
           x1: Math.min(selectionStart.x, imgCoords.x),
           y1: Math.min(selectionStart.y, imgCoords.y),
           x2: Math.max(selectionStart.x, imgCoords.x),
@@ -618,30 +627,29 @@ function Viewer() {
   }, [isDragging, isSelecting, selectionStart, dragStart, pan, zoom, imageData, canvasToImageCoords, bayerChannel])
 
   const handleMouseUp = useCallback(() => {
-    if (isSelecting && selection) {
-      // Compute histogram for selected area
-      computeHistogram(selection)
+    if (isSelecting && currentSelection) {
+      // Add new selection to the list
+      const newSelections = [...selections, currentSelection]
+      setSelections(newSelections)
+      setCurrentSelection(null)
+      // Compute histogram for all selections
+      computeHistogram(newSelections)
     }
     setIsDragging(false)
     setIsSelecting(false)
-  }, [isSelecting, selection])
+  }, [isSelecting, currentSelection, selections])
 
   const handleMouseLeave = useCallback(() => {
     setIsDragging(false)
     setIsSelecting(false)
+    setCurrentSelection(null)
     setMousePos(null)
     setPixelValue(null)
   }, [])
 
-  // Compute histogram for selected area
-  const computeHistogram = useCallback((sel) => {
-    if (!imageData || !sel) return
-
-    // Clamp selection to image bounds
-    const x1 = Math.max(0, Math.min(sel.x1, imageData.width - 1))
-    const y1 = Math.max(0, Math.min(sel.y1, imageData.height - 1))
-    const x2 = Math.max(0, Math.min(sel.x2, imageData.width - 1))
-    const y2 = Math.max(0, Math.min(sel.y2, imageData.height - 1))
+  // Compute histogram for all selected areas
+  const computeHistogram = useCallback((sels) => {
+    if (!imageData || !sels || sels.length === 0) return
 
     const numBins = 256
     const channels = imageData.channels
@@ -669,16 +677,23 @@ function Viewer() {
     const values = []
     let pixelCount = 0
 
-    // Collect values from selection (filtered by Bayer channel if active)
-    for (let y = y1; y <= y2; y++) {
-      for (let x = x1; x <= x2; x++) {
-        if (!shouldIncludePixel(x, y)) continue
-        pixelCount++
-        const idx = (y * imageData.width + x) * 4
-        if (channels === 1) {
-          values.push(imageData.data[idx])
-        } else {
-          values.push(imageData.data[idx], imageData.data[idx + 1], imageData.data[idx + 2])
+    // Collect values from all selections (filtered by Bayer channel if active)
+    for (const sel of sels) {
+      const x1 = Math.max(0, Math.min(sel.x1, imageData.width - 1))
+      const y1 = Math.max(0, Math.min(sel.y1, imageData.height - 1))
+      const x2 = Math.max(0, Math.min(sel.x2, imageData.width - 1))
+      const y2 = Math.max(0, Math.min(sel.y2, imageData.height - 1))
+
+      for (let y = y1; y <= y2; y++) {
+        for (let x = x1; x <= x2; x++) {
+          if (!shouldIncludePixel(x, y)) continue
+          pixelCount++
+          const idx = (y * imageData.width + x) * 4
+          if (channels === 1) {
+            values.push(imageData.data[idx])
+          } else {
+            values.push(imageData.data[idx], imageData.data[idx + 1], imageData.data[idx + 2])
+          }
         }
       }
     }
@@ -689,22 +704,29 @@ function Viewer() {
       if (v > maxVal) maxVal = v
     }
 
-    // Build histogram
+    // Build histogram from all selections
     const range = maxVal - minVal || 1
-    for (let y = y1; y <= y2; y++) {
-      for (let x = x1; x <= x2; x++) {
-        if (!shouldIncludePixel(x, y)) continue
-        const idx = (y * imageData.width + x) * 4
-        if (channels === 1) {
-          const binIdx = Math.floor(((imageData.data[idx] - minVal) / range) * (numBins - 1))
-          histR[Math.max(0, Math.min(numBins - 1, binIdx))]++
-        } else {
-          const binR = Math.floor(((imageData.data[idx] - minVal) / range) * (numBins - 1))
-          const binG = Math.floor(((imageData.data[idx + 1] - minVal) / range) * (numBins - 1))
-          const binB = Math.floor(((imageData.data[idx + 2] - minVal) / range) * (numBins - 1))
-          histR[Math.max(0, Math.min(numBins - 1, binR))]++
-          histG[Math.max(0, Math.min(numBins - 1, binG))]++
-          histB[Math.max(0, Math.min(numBins - 1, binB))]++
+    for (const sel of sels) {
+      const x1 = Math.max(0, Math.min(sel.x1, imageData.width - 1))
+      const y1 = Math.max(0, Math.min(sel.y1, imageData.height - 1))
+      const x2 = Math.max(0, Math.min(sel.x2, imageData.width - 1))
+      const y2 = Math.max(0, Math.min(sel.y2, imageData.height - 1))
+
+      for (let y = y1; y <= y2; y++) {
+        for (let x = x1; x <= x2; x++) {
+          if (!shouldIncludePixel(x, y)) continue
+          const idx = (y * imageData.width + x) * 4
+          if (channels === 1) {
+            const binIdx = Math.floor(((imageData.data[idx] - minVal) / range) * (numBins - 1))
+            histR[Math.max(0, Math.min(numBins - 1, binIdx))]++
+          } else {
+            const binR = Math.floor(((imageData.data[idx] - minVal) / range) * (numBins - 1))
+            const binG = Math.floor(((imageData.data[idx + 1] - minVal) / range) * (numBins - 1))
+            const binB = Math.floor(((imageData.data[idx + 2] - minVal) / range) * (numBins - 1))
+            histR[Math.max(0, Math.min(numBins - 1, binR))]++
+            histG[Math.max(0, Math.min(numBins - 1, binG))]++
+            histB[Math.max(0, Math.min(numBins - 1, binB))]++
+          }
         }
       }
     }
@@ -716,7 +738,8 @@ function Viewer() {
       channels,
       min: minVal,
       max: maxVal,
-      numPixels: pixelCount
+      numPixels: pixelCount,
+      numRegions: sels.length
     })
   }, [imageData, bayerChannel])
 
@@ -867,18 +890,14 @@ function Viewer() {
                 className={selectionMode ? 'active' : ''}
                 onClick={() => {
                   setSelectionMode(!selectionMode)
-                  if (selectionMode) {
-                    setSelection(null)
-                    setHistogram(null)
-                  }
                 }}
                 title="Shift+drag to pan while selecting"
               >
                 {selectionMode ? '📊 Select Area (ON)' : '📊 Select Area'}
               </button>
-              {selection && (
-                <button onClick={() => { setSelection(null); setHistogram(null); }}>
-                  Clear Selection
+              {selections.length > 0 && (
+                <button onClick={() => { setSelections([]); setHistogram(null); }}>
+                  Clear ROIs ({selections.length})
                 </button>
               )}
             </div>
@@ -912,7 +931,7 @@ function Viewer() {
         {/* Histogram panel */}
         <HistogramDisplay 
           histogram={histogram} 
-          onClose={() => { setHistogram(null); setSelection(null); }}
+          onClose={() => { setHistogram(null); setSelections([]); }}
         />
       </div>
 
