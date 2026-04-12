@@ -515,6 +515,9 @@ function Viewer() {
   }, [pan, zoom, imageData])
 
   // Mouse handlers for pan and selection
+  // Space + drag = pan (even in selection mode)
+  // In selection mode: drag = draw rectangle
+  // Otherwise: drag = pan
   const handleMouseDown = useCallback((e) => {
     if (e.button !== 0) return
     
@@ -522,6 +525,13 @@ function Viewer() {
     const rect = canvas.getBoundingClientRect()
     const canvasX = e.clientX - rect.left
     const canvasY = e.clientY - rect.top
+    
+    // Space key held = always pan
+    if (e.shiftKey) {
+      setIsDragging(true)
+      setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
+      return
+    }
     
     if (selectionMode && imageData) {
       // Start selection
@@ -862,6 +872,7 @@ function Viewer() {
                     setHistogram(null)
                   }
                 }}
+                title="Shift+drag to pan while selecting"
               >
                 {selectionMode ? '📊 Select Area (ON)' : '📊 Select Area'}
               </button>
