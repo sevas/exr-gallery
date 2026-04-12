@@ -512,7 +512,7 @@ function Viewer() {
     tempCanvas.height = outputHeight
     tempCanvas.getContext('2d').putImageData(outputData, 0, 0)
     
-    ctx.imageSmoothingEnabled = zoom < 4
+    ctx.imageSmoothingEnabled = false
     ctx.drawImage(tempCanvas, 0, 0, outputWidth, outputHeight)
 
     ctx.restore()
