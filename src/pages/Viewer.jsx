@@ -616,7 +616,6 @@ function Viewer() {
     const y2 = Math.max(0, Math.min(sel.y2, imageData.height - 1))
 
     const numBins = 256
-    const isFloat = imageData.dtype === 'float32'
     const channels = imageData.channels
     
     // Initialize histogram bins
@@ -624,12 +623,29 @@ function Viewer() {
     const histG = channels > 1 ? new Array(numBins).fill(0) : null
     const histB = channels > 1 ? new Array(numBins).fill(0) : null
 
+    // Helper to check if pixel matches Bayer channel filter
+    const shouldIncludePixel = (x, y) => {
+      if (!bayerChannel) return true
+      const evenRow = y % 2 === 0
+      const evenCol = x % 2 === 0
+      switch (bayerChannel) {
+        case 'R': return evenRow && evenCol
+        case 'G1': return evenRow && !evenCol
+        case 'G2': return !evenRow && evenCol
+        case 'B': return !evenRow && !evenCol
+        default: return true
+      }
+    }
+
     let minVal = Infinity, maxVal = -Infinity
     const values = []
+    let pixelCount = 0
 
-    // Collect values from selection
+    // Collect values from selection (filtered by Bayer channel if active)
     for (let y = y1; y <= y2; y++) {
       for (let x = x1; x <= x2; x++) {
+        if (!shouldIncludePixel(x, y)) continue
+        pixelCount++
         const idx = (y * imageData.width + x) * 4
         if (channels === 1) {
           values.push(imageData.data[idx])
@@ -649,6 +665,7 @@ function Viewer() {
     const range = maxVal - minVal || 1
     for (let y = y1; y <= y2; y++) {
       for (let x = x1; x <= x2; x++) {
+        if (!shouldIncludePixel(x, y)) continue
         const idx = (y * imageData.width + x) * 4
         if (channels === 1) {
           const binIdx = Math.floor(((imageData.data[idx] - minVal) / range) * (numBins - 1))
@@ -671,9 +688,9 @@ function Viewer() {
       channels,
       min: minVal,
       max: maxVal,
-      numPixels: (x2 - x1 + 1) * (y2 - y1 + 1)
+      numPixels: pixelCount
     })
-  }, [imageData])
+  }, [imageData, bayerChannel])
 
   // Mouse wheel zoom
   useEffect(() => {
