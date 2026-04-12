@@ -83,8 +83,8 @@ function HistogramDisplay({ histogram, index, onClose }) {
     const ctx = canvas.getContext('2d')
     const width = canvas.width
     const height = canvas.height
-    const leftMargin = 40
-    const bottomMargin = 20
+    const leftMargin = 30
+    const bottomMargin = 14
     
     // Clear
     ctx.fillStyle = '#1a1a1a'
@@ -133,18 +133,17 @@ function HistogramDisplay({ histogram, index, onClose }) {
     
     // Draw axis labels
     ctx.fillStyle = '#888'
-    ctx.font = '10px monospace'
+    ctx.font = '9px monospace'
     
     // X-axis labels (value range)
     ctx.textAlign = 'left'
-    ctx.fillText(histogram.min.toFixed(2), leftMargin, height - 4)
+    ctx.fillText(histogram.min.toFixed(1), leftMargin, height - 2)
     ctx.textAlign = 'right'
-    ctx.fillText(histogram.max.toFixed(2), width - 2, height - 4)
+    ctx.fillText(histogram.max.toFixed(1), width - 2, height - 2)
     
     // Y-axis labels (count)
     ctx.textAlign = 'right'
-    ctx.fillText(maxCount.toString(), leftMargin - 4, 12)
-    ctx.fillText('0', leftMargin - 4, plotHeight)
+    ctx.fillText(maxCount.toString(), leftMargin - 2, 10)
   }, [histogram])
   
   if (!histogram) return null
@@ -161,11 +160,11 @@ function HistogramDisplay({ histogram, index, onClose }) {
         <span style={{ color: '#000' }}>ROI {index + 1} ({histogram.numPixels} px)</span>
         <button onClick={() => onClose(index)} style={{ color: '#000' }}>×</button>
       </div>
-      <canvas ref={canvasRef} width={300} height={100} />
+      <canvas ref={canvasRef} width={200} height={60} />
       <div className="histogram-stats">
-        <span>μ: {formatStat(histogram.mean)}</span>
-        <span>σ: {formatStat(histogram.stdDev)}</span>
-        <span>SNR: {formatStat(histogram.snr)}</span>
+        <span>μ={formatStat(histogram.mean)}</span>
+        <span>σ={formatStat(histogram.stdDev)}</span>
+        <span>SNR={formatStat(histogram.snr)}</span>
       </div>
     </div>
   )
