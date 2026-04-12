@@ -541,7 +541,6 @@
   background-color: rgba(0, 0, 0, 0.9);
   border-radius: 6px;
   border: 2px solid #444;
-  width: 254px;
 }
 
 .histogram-header {
@@ -569,6 +568,8 @@
 
 .histogram-panel canvas {
   display: block;
+  width: 250px;
+  height: 80px;
 }
 
 .histogram-stats {
