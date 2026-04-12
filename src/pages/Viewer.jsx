@@ -710,7 +710,7 @@ function Viewer() {
     })
   }, [imageData, bayerChannel])
 
-  // Mouse wheel zoom
+  // Mouse wheel zoom (centered on mouse position)
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -719,7 +719,24 @@ function Viewer() {
       e.preventDefault()
       const step = e.ctrlKey ? 1 : 0.1
       const delta = e.deltaY > 0 ? -step : step
-      setZoom(prev => Math.min(Math.max(prev + delta, 0.1), 50))
+      
+      // Get mouse position relative to canvas center
+      const rect = canvas.getBoundingClientRect()
+      const mouseX = e.clientX - rect.left - canvas.width / 2
+      const mouseY = e.clientY - rect.top - canvas.height / 2
+      
+      setZoom(prevZoom => {
+        const newZoom = Math.min(Math.max(prevZoom + delta, 0.1), 50)
+        const zoomRatio = newZoom / prevZoom
+        
+        // Adjust pan to keep point under mouse stationary
+        setPan(prevPan => ({
+          x: mouseX - (mouseX - prevPan.x) * zoomRatio,
+          y: mouseY - (mouseY - prevPan.y) * zoomRatio
+        }))
+        
+        return newZoom
+      })
     }
 
     canvas.addEventListener('wheel', handleWheel, { passive: false })
