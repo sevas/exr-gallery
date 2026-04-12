@@ -569,6 +569,16 @@
   display: block;
 }
 
+.histogram-stats {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.3rem 0.5rem;
+  background-color: #222;
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: #aaa;
+}
+
 .viewer-controls button.active {
   background-color: #22aa44;
 }

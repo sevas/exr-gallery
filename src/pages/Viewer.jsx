@@ -148,6 +148,12 @@ function HistogramDisplay({ histogram, index, onClose }) {
   }, [histogram])
   
   if (!histogram) return null
+
+  const formatStat = (val) => {
+    if (Math.abs(val) >= 100) return val.toFixed(1)
+    if (Math.abs(val) >= 1) return val.toFixed(2)
+    return val.toFixed(4)
+  }
   
   return (
     <div className="histogram-panel" style={{ borderColor: color }}>
@@ -156,6 +162,11 @@ function HistogramDisplay({ histogram, index, onClose }) {
         <button onClick={() => onClose(index)} style={{ color: '#000' }}>×</button>
       </div>
       <canvas ref={canvasRef} width={300} height={100} />
+      <div className="histogram-stats">
+        <span>μ: {formatStat(histogram.mean)}</span>
+        <span>σ: {formatStat(histogram.stdDev)}</span>
+        <span>SNR: {formatStat(histogram.snr)}</span>
+      </div>
     </div>
   )
 }
@@ -756,6 +767,18 @@ function Viewer() {
       }
     }
 
+    // Compute mean
+    const sum = values.reduce((a, b) => a + b, 0)
+    const mean = sum / values.length
+
+    // Compute standard deviation
+    const sqDiffs = values.map(v => (v - mean) ** 2)
+    const avgSqDiff = sqDiffs.reduce((a, b) => a + b, 0) / values.length
+    const stdDev = Math.sqrt(avgSqDiff)
+
+    // Compute SNR (signal-to-noise ratio)
+    const snr = stdDev > 0 ? mean / stdDev : 0
+
     return {
       r: histR,
       g: histG,
@@ -763,7 +786,10 @@ function Viewer() {
       channels,
       min: minVal,
       max: maxVal,
-      numPixels: pixelCount
+      numPixels: pixelCount,
+      mean,
+      stdDev,
+      snr
     }
   }, [imageData, bayerChannel])
 
