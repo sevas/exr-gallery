@@ -11,6 +11,9 @@ function App() {
         <NavLink to="/compare" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
           Comparator
         </NavLink>
+        <NavLink to="/viewer" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+          Viewer
+        </NavLink>
       </nav>
       <Outlet />
     </div>
