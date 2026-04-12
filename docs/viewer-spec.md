@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Image Viewer is a web-based image analysis tool for viewing and analyzing raster images. It supports multiple image formats, pixel-level inspection, histogram analysis, and specialized Bayer pattern visualization.
+The Image Viewer is a web-based image analysis tool for viewing and analyzing raster images. It supports multiple image formats, pixel-level inspection, multiple ROI histogram analysis with statistics, and specialized Bayer pattern visualization.
 
 ## Supported Formats
 
@@ -16,7 +16,11 @@ The Image Viewer is a web-based image analysis tool for viewing and analyzing ra
 
 ### Image Loading
 
-- **Sample Images**: Dropdown menu with pre-loaded test images
+- **Sample Images**: Dropdown menu with pre-loaded test images including:
+  - Natural photos (river, leaves, coast) in color, grayscale, and Bayer versions
+  - Noise test images (quadrant and gradient variations)
+  - Gradient and checkerboard patterns
+  - HDR EXR test patterns
 - **File Upload**: Local file picker supporting PNG, JPG, and EXR formats
 - Images are loaded into memory as RGBA float32 arrays for uniform processing
 
@@ -24,7 +28,7 @@ The Image Viewer is a web-based image analysis tool for viewing and analyzing ra
 
 #### Pan & Zoom
 - **Pan**: Click and drag to pan the image
-- **Zoom**: Mouse wheel to zoom in/out
+- **Zoom**: Mouse wheel to zoom in/out (centered on mouse position)
   - Normal scroll: 10% zoom step
   - Ctrl + scroll: 100% zoom step (fast zoom)
 - **Zoom Range**: 10% to 5000%
@@ -56,18 +60,24 @@ The Image Viewer is a web-based image analysis tool for viewing and analyzing ra
 - **RGB**: Shows R, G, B values
 - **Float images**: 4 decimal places
 - **Integer images**: Whole numbers
+- **Bayer mode**: Only shows value when hovering over selected channel pixels
 
-### Rectangle Selection & Histogram
+### Multiple ROI Selection & Histogram
 
 1. Click "Select Area" button to enter selection mode
-2. Click and drag to draw rectangle on image
-3. Histogram panel appears showing value distribution:
-   - **Grayscale**: White bars
-   - **RGB**: Overlapping red/green/blue bars with transparency
-4. X-axis: Value range (min to max in selection)
-5. Y-axis: Pixel count
-6. Header shows total pixel count in selection
-7. "Clear Selection" button to remove selection
+2. Click and drag to draw rectangle on image (Shift+drag to pan while in selection mode)
+3. Multiple ROIs supported - each creates a separate histogram panel
+4. ROIs are color-coded with matching rectangle outlines and histogram headers
+5. Histogram panels display:
+   - **Header**: ROI number, pixel count, close button
+   - **Plot**: Value distribution
+     - Grayscale: White bars
+     - RGB: Overlapping red/green/blue bars with transparency
+   - **X-axis**: Value range (min to max in selection)
+   - **Y-axis**: Pixel count
+   - **Statistics**: μ (mean), σ (standard deviation), SNR (signal-to-noise ratio)
+6. ROIs are cleared when changing images
+7. Close individual ROIs with × button on histogram panel
 
 ### Bayer Pattern Support
 
@@ -82,6 +92,7 @@ For images with "bayer" in the filename:
   ```
 - **Channel Extraction**: Selected channel creates new half-size image (width/2 × height/2)
 - Extracted image contains only the selected channel's pixels
+- Histogram and pixel picker filter to selected channel pixels only
 
 | Channel | Source Pixels |
 |---------|---------------|
@@ -107,21 +118,42 @@ Displays image metadata:
 ├─────────────────────────────────────────────────────┤
 │ [Sample Images ▼] [Upload] [Levels ═══●═══●═══]    │
 │ [Colormap ▼] [Bayer ▼] [Zoom: 100%] [-][+][Reset]  │
-│ [📊 Select Area] [Clear Selection]                  │
+│ [📊 Select Area]                                    │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│                   ┌──────────┐      ┌─────────────┐│
-│                   │  Image   │      │(x, y) Val   ││
-│                   │  Canvas  │      └─────────────┘│
-│                   │          │      ┌─────────────┐│
-│                   │          │      │ Histogram   ││
-│                   └──────────┘      │ ▄▄▆█▇▅▃▂▁   ││
-│                                     │ 0.00  255.00││
-│                                     └─────────────┘│
+│      ┌────────────────┐         ┌─────────────────┐│
+│      │    ┌────┐      │         │(x, y) Val       ││
+│      │    │ROI1│ Image│         └─────────────────┘│
+│      │    └────┘      │         ┌─ROI 1 (1024 px)─┐│
+│      │         ┌────┐ │         │ ▄▄▆█▇▅▃▂▁    [×]││
+│      │         │ROI2│ │         │ μ=128 σ=15 SNR=8││
+│      │         └────┘ │         ├─ROI 2 (512 px)──┤│
+│      └────────────────┘         │ ▂▃▅▇█▇▅▃▂    [×]││
+│                                 │ μ=100 σ=25 SNR=4││
+│                                 └─────────────────┘│
 ├─────────────────────────────────────────────────────┤
 │ filename.png │ 800×600 │ RGB │ uint8 │ [0 - 255]   │
 └─────────────────────────────────────────────────────┘
 ```
+
+## Sample Images
+
+### Natural Photos
+- `photo_river.jpg` - River landscape
+- `photo_leaves.jpg` - Autumn leaves
+- `photo_coast.jpg` - Coastal scene
+- Grayscale versions (`_gray.png`)
+- Bayer RGGB versions (`_bayer.png`)
+
+### Noise Test Images
+- `noise_rgb.png`, `noise_gray.png`, `noise_bayer.png` - Four quadrants with σ=5, 15, 30, 60
+- `noise_gradient_rgb.png`, `noise_gradient_gray.png`, `noise_gradient_bayer.png` - σ varies 2→50 left to right
+
+### Test Patterns
+- `gradient_gray.png` - Horizontal grayscale gradient
+- `gradient_rgb.png` - Horizontal color ramp
+- `checkerboard_gray.png` - 32px checkerboard pattern
+- `testpattern_gray.exr`, `testpattern_rgb.exr` - HDR test patterns
 
 ## Technical Implementation
 
@@ -135,8 +167,10 @@ Displays image metadata:
 2. Statistics computed (min, max, mean)
 3. On render: levels applied → colormap applied → canvas drawn
 4. Transform (pan/zoom) applied via canvas context
+5. ROI selections overlay drawn with color-coded rectangles
 
 ### Performance Considerations
 - Images stored as typed arrays (Uint8Array or Float32Array)
 - Rendering uses offscreen canvas for level/colormap processing
 - Histogram binning uses 256 bins with dynamic normalization
+- ROI statistics computed on-demand when selection completes
