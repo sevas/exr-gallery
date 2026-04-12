@@ -121,6 +121,92 @@ def generate_checkerboard():
     Image.fromarray(img, mode='L').save(f"{OUTPUT_DIR}/checkerboard_gray.png")
     print(f"Created: {OUTPUT_DIR}/checkerboard_gray.png")
 
+def generate_noise_images():
+    """
+    Generate noise images with varying noise levels across different regions.
+    Creates RGB, grayscale, and Bayer versions.
+    """
+    width, height = 512, 512
+    
+    # Create base image with 4 quadrants of different noise levels
+    # Each quadrant has a constant mean with different standard deviations
+    mean_value = 128
+    noise_levels = [5, 15, 30, 60]  # std dev for each quadrant
+    
+    # Generate RGB noise image
+    rgb_noise = np.zeros((height, width, 3), dtype=np.uint8)
+    
+    quadrants = [
+        (0, 0, height//2, width//2),           # Top-left: low noise
+        (0, width//2, height//2, width),       # Top-right: medium-low noise
+        (height//2, 0, height, width//2),      # Bottom-left: medium-high noise
+        (height//2, width//2, height, width),  # Bottom-right: high noise
+    ]
+    
+    for i, (y1, x1, y2, x2) in enumerate(quadrants):
+        noise = np.random.normal(mean_value, noise_levels[i], (y2-y1, x2-x1, 3))
+        rgb_noise[y1:y2, x1:x2] = np.clip(noise, 0, 255).astype(np.uint8)
+    
+    Image.fromarray(rgb_noise, mode='RGB').save(f"{OUTPUT_DIR}/noise_rgb.png")
+    print(f"Created: {OUTPUT_DIR}/noise_rgb.png (quadrants: σ={noise_levels})")
+    
+    # Generate grayscale noise image
+    gray_noise = np.zeros((height, width), dtype=np.uint8)
+    
+    for i, (y1, x1, y2, x2) in enumerate(quadrants):
+        noise = np.random.normal(mean_value, noise_levels[i], (y2-y1, x2-x1))
+        gray_noise[y1:y2, x1:x2] = np.clip(noise, 0, 255).astype(np.uint8)
+    
+    Image.fromarray(gray_noise, mode='L').save(f"{OUTPUT_DIR}/noise_gray.png")
+    print(f"Created: {OUTPUT_DIR}/noise_gray.png (quadrants: σ={noise_levels})")
+    
+    # Generate Bayer pattern noise image
+    # First create RGB, then extract Bayer pattern
+    bayer_rgb = np.zeros((height, width, 3), dtype=np.uint8)
+    
+    for i, (y1, x1, y2, x2) in enumerate(quadrants):
+        noise = np.random.normal(mean_value, noise_levels[i], (y2-y1, x2-x1, 3))
+        bayer_rgb[y1:y2, x1:x2] = np.clip(noise, 0, 255).astype(np.uint8)
+    
+    bayer = rgb_to_bayer_rggb(bayer_rgb)
+    Image.fromarray(bayer, mode='L').save(f"{OUTPUT_DIR}/noise_bayer.png")
+    print(f"Created: {OUTPUT_DIR}/noise_bayer.png (quadrants: σ={noise_levels})")
+    
+    # Generate horizontal gradient noise (noise varies smoothly left to right)
+    rgb_gradient_noise = np.zeros((height, width, 3), dtype=np.uint8)
+    
+    for x in range(width):
+        # Noise level increases from left (σ=2) to right (σ=50)
+        sigma = 2 + (x / width) * 48
+        noise = np.random.normal(mean_value, sigma, (height, 3))
+        rgb_gradient_noise[:, x] = np.clip(noise, 0, 255).astype(np.uint8)
+    
+    Image.fromarray(rgb_gradient_noise, mode='RGB').save(f"{OUTPUT_DIR}/noise_gradient_rgb.png")
+    print(f"Created: {OUTPUT_DIR}/noise_gradient_rgb.png (σ varies 2→50 left to right)")
+    
+    gray_gradient_noise = np.zeros((height, width), dtype=np.uint8)
+    
+    for x in range(width):
+        sigma = 2 + (x / width) * 48
+        noise = np.random.normal(mean_value, sigma, height)
+        gray_gradient_noise[:, x] = np.clip(noise, 0, 255).astype(np.uint8)
+    
+    Image.fromarray(gray_gradient_noise, mode='L').save(f"{OUTPUT_DIR}/noise_gradient_gray.png")
+    print(f"Created: {OUTPUT_DIR}/noise_gradient_gray.png (σ varies 2→50 left to right)")
+    
+    # Bayer version of gradient noise
+    bayer_gradient_rgb = np.zeros((height, width, 3), dtype=np.uint8)
+    
+    for x in range(width):
+        sigma = 2 + (x / width) * 48
+        noise = np.random.normal(mean_value, sigma, (height, 3))
+        bayer_gradient_rgb[:, x] = np.clip(noise, 0, 255).astype(np.uint8)
+    
+    bayer_gradient = rgb_to_bayer_rggb(bayer_gradient_rgb)
+    Image.fromarray(bayer_gradient, mode='L').save(f"{OUTPUT_DIR}/noise_gradient_bayer.png")
+    print(f"Created: {OUTPUT_DIR}/noise_gradient_bayer.png (σ varies 2→50 left to right)")
+
+
 def generate_exr_gray():
     """256x256 float32 grayscale EXR with HDR values"""
     try:
@@ -210,6 +296,7 @@ def main():
     generate_gradient_gray()
     generate_gradient_rgb()
     generate_checkerboard()
+    generate_noise_images()
     
     # EXR images (require OpenEXR library)
     generate_exr_gray()
