@@ -66,7 +66,7 @@ function RangeSlider({ min, max, valueMin, valueMax, onChange, step = 0.01 }) {
 }
 
 // Histogram display component
-function HistogramDisplay({ histogram, onClose }) {
+function HistogramDisplay({ histogram, index, onClose }) {
   const canvasRef = useRef(null)
   
   useEffect(() => {
@@ -142,15 +142,13 @@ function HistogramDisplay({ histogram, onClose }) {
   
   if (!histogram) return null
   
-  const regionText = histogram.numRegions > 1 ? ` in ${histogram.numRegions} ROIs` : ''
-  
   return (
     <div className="histogram-panel">
       <div className="histogram-header">
-        <span>Histogram ({histogram.numPixels} px{regionText})</span>
-        <button onClick={onClose}>×</button>
+        <span>ROI {index + 1} ({histogram.numPixels} px)</span>
+        <button onClick={() => onClose(index)}>×</button>
       </div>
-      <canvas ref={canvasRef} width={512} height={140} />
+      <canvas ref={canvasRef} width={300} height={100} />
     </div>
   )
 }
@@ -237,7 +235,7 @@ function Viewer() {
   const [currentSelection, setCurrentSelection] = useState(null) // Current drawing selection
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionStart, setSelectionStart] = useState(null)
-  const [histogram, setHistogram] = useState(null)
+  const [histograms, setHistograms] = useState([]) // Array of histograms, one per ROI
 
   // Sample images available
   const sampleImages = [
@@ -628,16 +626,15 @@ function Viewer() {
 
   const handleMouseUp = useCallback(() => {
     if (isSelecting && currentSelection) {
-      // Add new selection to the list
-      const newSelections = [...selections, currentSelection]
-      setSelections(newSelections)
+      // Add new selection and compute its histogram
+      const newHistogram = computeSingleHistogram(currentSelection)
+      setSelections(prev => [...prev, currentSelection])
+      setHistograms(prev => [...prev, newHistogram])
       setCurrentSelection(null)
-      // Compute histogram for all selections
-      computeHistogram(newSelections)
     }
     setIsDragging(false)
     setIsSelecting(false)
-  }, [isSelecting, currentSelection, selections])
+  }, [isSelecting, currentSelection])
 
   const handleMouseLeave = useCallback(() => {
     setIsDragging(false)
@@ -647,9 +644,9 @@ function Viewer() {
     setPixelValue(null)
   }, [])
 
-  // Compute histogram for all selected areas
-  const computeHistogram = useCallback((sels) => {
-    if (!imageData || !sels || sels.length === 0) return
+  // Compute histogram for a single ROI
+  const computeSingleHistogram = useCallback((sel) => {
+    if (!imageData || !sel) return null
 
     const numBins = 256
     const channels = imageData.channels
@@ -673,27 +670,26 @@ function Viewer() {
       }
     }
 
+    // Clamp selection to image bounds
+    const x1 = Math.max(0, Math.min(sel.x1, imageData.width - 1))
+    const y1 = Math.max(0, Math.min(sel.y1, imageData.height - 1))
+    const x2 = Math.max(0, Math.min(sel.x2, imageData.width - 1))
+    const y2 = Math.max(0, Math.min(sel.y2, imageData.height - 1))
+
     let minVal = Infinity, maxVal = -Infinity
     const values = []
     let pixelCount = 0
 
-    // Collect values from all selections (filtered by Bayer channel if active)
-    for (const sel of sels) {
-      const x1 = Math.max(0, Math.min(sel.x1, imageData.width - 1))
-      const y1 = Math.max(0, Math.min(sel.y1, imageData.height - 1))
-      const x2 = Math.max(0, Math.min(sel.x2, imageData.width - 1))
-      const y2 = Math.max(0, Math.min(sel.y2, imageData.height - 1))
-
-      for (let y = y1; y <= y2; y++) {
-        for (let x = x1; x <= x2; x++) {
-          if (!shouldIncludePixel(x, y)) continue
-          pixelCount++
-          const idx = (y * imageData.width + x) * 4
-          if (channels === 1) {
-            values.push(imageData.data[idx])
-          } else {
-            values.push(imageData.data[idx], imageData.data[idx + 1], imageData.data[idx + 2])
-          }
+    // Collect values from selection (filtered by Bayer channel if active)
+    for (let y = y1; y <= y2; y++) {
+      for (let x = x1; x <= x2; x++) {
+        if (!shouldIncludePixel(x, y)) continue
+        pixelCount++
+        const idx = (y * imageData.width + x) * 4
+        if (channels === 1) {
+          values.push(imageData.data[idx])
+        } else {
+          values.push(imageData.data[idx], imageData.data[idx + 1], imageData.data[idx + 2])
         }
       }
     }
@@ -704,43 +700,35 @@ function Viewer() {
       if (v > maxVal) maxVal = v
     }
 
-    // Build histogram from all selections
+    // Build histogram
     const range = maxVal - minVal || 1
-    for (const sel of sels) {
-      const x1 = Math.max(0, Math.min(sel.x1, imageData.width - 1))
-      const y1 = Math.max(0, Math.min(sel.y1, imageData.height - 1))
-      const x2 = Math.max(0, Math.min(sel.x2, imageData.width - 1))
-      const y2 = Math.max(0, Math.min(sel.y2, imageData.height - 1))
-
-      for (let y = y1; y <= y2; y++) {
-        for (let x = x1; x <= x2; x++) {
-          if (!shouldIncludePixel(x, y)) continue
-          const idx = (y * imageData.width + x) * 4
-          if (channels === 1) {
-            const binIdx = Math.floor(((imageData.data[idx] - minVal) / range) * (numBins - 1))
-            histR[Math.max(0, Math.min(numBins - 1, binIdx))]++
-          } else {
-            const binR = Math.floor(((imageData.data[idx] - minVal) / range) * (numBins - 1))
-            const binG = Math.floor(((imageData.data[idx + 1] - minVal) / range) * (numBins - 1))
-            const binB = Math.floor(((imageData.data[idx + 2] - minVal) / range) * (numBins - 1))
-            histR[Math.max(0, Math.min(numBins - 1, binR))]++
-            histG[Math.max(0, Math.min(numBins - 1, binG))]++
-            histB[Math.max(0, Math.min(numBins - 1, binB))]++
-          }
+    for (let y = y1; y <= y2; y++) {
+      for (let x = x1; x <= x2; x++) {
+        if (!shouldIncludePixel(x, y)) continue
+        const idx = (y * imageData.width + x) * 4
+        if (channels === 1) {
+          const binIdx = Math.floor(((imageData.data[idx] - minVal) / range) * (numBins - 1))
+          histR[Math.max(0, Math.min(numBins - 1, binIdx))]++
+        } else {
+          const binR = Math.floor(((imageData.data[idx] - minVal) / range) * (numBins - 1))
+          const binG = Math.floor(((imageData.data[idx + 1] - minVal) / range) * (numBins - 1))
+          const binB = Math.floor(((imageData.data[idx + 2] - minVal) / range) * (numBins - 1))
+          histR[Math.max(0, Math.min(numBins - 1, binR))]++
+          histG[Math.max(0, Math.min(numBins - 1, binG))]++
+          histB[Math.max(0, Math.min(numBins - 1, binB))]++
         }
       }
     }
 
-    setHistogram({
+    return {
       r: histR,
       g: histG,
       b: histB,
       channels,
       min: minVal,
       max: maxVal,
-      numPixels: pixelCount,
-      numRegions: sels.length
-    })
+      numPixels: pixelCount
+    }
   }, [imageData, bayerChannel])
 
   // Mouse wheel zoom (centered on mouse position)
@@ -896,7 +884,7 @@ function Viewer() {
                 {selectionMode ? '📊 Select Area (ON)' : '📊 Select Area'}
               </button>
               {selections.length > 0 && (
-                <button onClick={() => { setSelections([]); setHistogram(null); }}>
+                <button onClick={() => { setSelections([]); setHistograms([]); }}>
                   Clear ROIs ({selections.length})
                 </button>
               )}
@@ -928,11 +916,20 @@ function Viewer() {
           </div>
         )}
 
-        {/* Histogram panel */}
-        <HistogramDisplay 
-          histogram={histogram} 
-          onClose={() => { setHistogram(null); setSelections([]); }}
-        />
+        {/* Histogram panels - one per ROI */}
+        <div className="histogram-container">
+          {histograms.map((hist, idx) => (
+            <HistogramDisplay 
+              key={idx}
+              histogram={hist}
+              index={idx}
+              onClose={(i) => {
+                setSelections(prev => prev.filter((_, j) => j !== i))
+                setHistograms(prev => prev.filter((_, j) => j !== i))
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Status bar */}
