@@ -362,6 +362,10 @@ function Viewer() {
       const isBayer = name.toLowerCase().includes('bayer')
       setIsBayerImage(isBayer)
       setBayerChannel(null)
+      
+      // Clear ROIs and histograms
+      setSelections([])
+      setHistograms([])
     } catch (err) {
       console.error('Failed to load image:', err)
     }
