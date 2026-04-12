@@ -405,36 +405,58 @@ function Viewer() {
     ctx.translate(-width / 2, -height / 2)
 
     // Create image data for rendering
-    const outputData = ctx.createImageData(width, height)
     const range = maxLevel - minLevel || 1
-
     const lut = COLORMAPS[colormap] || COLORMAPS.gray
 
-    // Helper to check if pixel should be shown based on Bayer channel filter
-    const shouldShowPixel = (x, y) => {
-      if (!bayerChannel) return true
-      const evenRow = y % 2 === 0
-      const evenCol = x % 2 === 0
+    // For Bayer channel filter, create extracted subimage
+    let outputWidth = width
+    let outputHeight = height
+    let outputData
+
+    if (bayerChannel && channels === 1) {
+      // Extract only selected channel pixels into a new smaller image
+      outputWidth = Math.floor(width / 2)
+      outputHeight = Math.floor(height / 2)
+      outputData = ctx.createImageData(outputWidth, outputHeight)
+
+      // Determine starting offset based on channel
+      let startX = 0, startY = 0
       switch (bayerChannel) {
-        case 'R': return evenRow && evenCol
-        case 'G1': return evenRow && !evenCol
-        case 'G2': return !evenRow && evenCol
-        case 'B': return !evenRow && !evenCol
-        default: return true
+        case 'R': startX = 0; startY = 0; break   // even row, even col
+        case 'G1': startX = 1; startY = 0; break  // even row, odd col
+        case 'G2': startX = 0; startY = 1; break  // odd row, even col
+        case 'B': startX = 1; startY = 1; break   // odd row, odd col
       }
-    }
 
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const i = y * width + x
-        const srcIdx = i * 4
-        const dstIdx = i * 4
+      for (let oy = 0; oy < outputHeight; oy++) {
+        for (let ox = 0; ox < outputWidth; ox++) {
+          const srcX = ox * 2 + startX
+          const srcY = oy * 2 + startY
+          const srcIdx = (srcY * width + srcX) * 4
+          const dstIdx = (oy * outputWidth + ox) * 4
 
-        const showPixel = shouldShowPixel(x, y)
+          const val = data[srcIdx]
+          const normalized = Math.max(0, Math.min(1, (val - minLevel) / range))
+          const lutIdx = Math.floor(normalized * 255)
+          const color = lut[Math.max(0, Math.min(255, lutIdx))]
+          outputData.data[dstIdx] = color[0]
+          outputData.data[dstIdx + 1] = color[1]
+          outputData.data[dstIdx + 2] = color[2]
+          outputData.data[dstIdx + 3] = 255
+        }
+      }
+    } else {
+      // Normal rendering (no Bayer filter or RGB image)
+      outputData = ctx.createImageData(width, height)
 
-        if (channels === 1) {
-          // Grayscale - apply colormap
-          if (showPixel) {
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = y * width + x
+          const srcIdx = i * 4
+          const dstIdx = i * 4
+
+          if (channels === 1) {
+            // Grayscale - apply colormap
             const val = data[srcIdx]
             const normalized = Math.max(0, Math.min(1, (val - minLevel) / range))
             const lutIdx = Math.floor(normalized * 255)
@@ -444,32 +466,26 @@ function Viewer() {
             outputData.data[dstIdx + 2] = color[2]
             outputData.data[dstIdx + 3] = 255
           } else {
-            // Dim non-selected pixels
-            outputData.data[dstIdx] = 30
-            outputData.data[dstIdx + 1] = 30
-            outputData.data[dstIdx + 2] = 30
+            // RGB - apply level mapping per channel
+            for (let c = 0; c < 3; c++) {
+              const val = data[srcIdx + c]
+              const normalized = Math.max(0, Math.min(1, (val - minLevel) / range))
+              outputData.data[dstIdx + c] = Math.round(normalized * 255)
+            }
             outputData.data[dstIdx + 3] = 255
           }
-        } else {
-          // RGB - apply level mapping per channel
-          for (let c = 0; c < 3; c++) {
-            const val = data[srcIdx + c]
-            const normalized = Math.max(0, Math.min(1, (val - minLevel) / range))
-            outputData.data[dstIdx + c] = Math.round(normalized * 255)
-          }
-          outputData.data[dstIdx + 3] = 255
         }
       }
     }
 
     // Draw to temporary canvas, then to main canvas with transform
     const tempCanvas = document.createElement('canvas')
-    tempCanvas.width = width
-    tempCanvas.height = height
+    tempCanvas.width = outputWidth
+    tempCanvas.height = outputHeight
     tempCanvas.getContext('2d').putImageData(outputData, 0, 0)
     
     ctx.imageSmoothingEnabled = zoom < 4
-    ctx.drawImage(tempCanvas, 0, 0)
+    ctx.drawImage(tempCanvas, 0, 0, outputWidth, outputHeight)
 
     // Draw selection rectangle if exists
     if (selection) {
