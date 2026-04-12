@@ -92,13 +92,21 @@ function HistogramDisplay({ histogram, onClose }) {
     if (maxCount === 0) return
     
     const barWidth = width / 256
+    const plotHeight = height - 20
     
     // Draw histogram bars
-    const drawChannel = (data, color, offset = 0) => {
+    const drawChannel = (data, color) => {
       ctx.fillStyle = color
       for (let i = 0; i < 256; i++) {
-        const barHeight = (data[i] / maxCount) * (height - 20)
-        ctx.fillRect(i * barWidth + offset, height - 20 - barHeight, barWidth - 1, barHeight)
+        const barHeight = (data[i] / maxCount) * plotHeight
+        if (barHeight > 0) {
+          ctx.fillRect(
+            Math.floor(i * barWidth), 
+            plotHeight - barHeight, 
+            Math.max(1, Math.floor(barWidth)), 
+            barHeight
+          )
+        }
       }
     }
     
@@ -130,7 +138,7 @@ function HistogramDisplay({ histogram, onClose }) {
         <span>Histogram ({histogram.numPixels} pixels)</span>
         <button onClick={onClose}>×</button>
       </div>
-      <canvas ref={canvasRef} width={256} height={120} />
+      <canvas ref={canvasRef} width={512} height={140} />
     </div>
   )
 }
