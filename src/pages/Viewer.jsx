@@ -1,6 +1,70 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { EXRLoader } from 'three/addons/loaders/EXRLoader.js'
 
+// Double range slider component
+function RangeSlider({ min, max, valueMin, valueMax, onChange, step = 0.01 }) {
+  const trackRef = useRef(null)
+  const [dragging, setDragging] = useState(null) // 'min', 'max', or null
+
+  const range = max - min || 1
+  const minPercent = ((valueMin - min) / range) * 100
+  const maxPercent = ((valueMax - min) / range) * 100
+
+  const handleMouseDown = (handle) => (e) => {
+    e.preventDefault()
+    setDragging(handle)
+  }
+
+  const handleMouseMove = useCallback((e) => {
+    if (!dragging || !trackRef.current) return
+    
+    const rect = trackRef.current.getBoundingClientRect()
+    const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100))
+    const value = min + (percent / 100) * range
+
+    if (dragging === 'min') {
+      onChange(Math.min(value, valueMax - step), valueMax)
+    } else {
+      onChange(valueMin, Math.max(value, valueMin + step))
+    }
+  }, [dragging, min, range, valueMin, valueMax, onChange, step])
+
+  const handleMouseUp = useCallback(() => {
+    setDragging(null)
+  }, [])
+
+  useEffect(() => {
+    if (dragging) {
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', handleMouseUp)
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('mouseup', handleMouseUp)
+      }
+    }
+  }, [dragging, handleMouseMove, handleMouseUp])
+
+  return (
+    <div className="range-slider" ref={trackRef}>
+      <div className="range-slider-track" />
+      <div 
+        className="range-slider-range"
+        style={{ left: `${minPercent}%`, width: `${maxPercent - minPercent}%` }}
+      />
+      <div
+        className="range-slider-handle"
+        style={{ left: `${minPercent}%` }}
+        onMouseDown={handleMouseDown('min')}
+      />
+      <div
+        className="range-slider-handle"
+        style={{ left: `${maxPercent}%` }}
+        onMouseDown={handleMouseDown('max')}
+      />
+    </div>
+  )
+}
+
 // Colormap lookup tables (256 entries each)
 const COLORMAPS = {
   gray: Array.from({ length: 256 }, (_, i) => [i, i, i]),
@@ -436,27 +500,33 @@ function Viewer() {
 
         {imageData && (
           <>
-            <div className="control-group">
-              <label>Min Level:</label>
+            <div className="control-group levels-group">
+              <label>Levels:</label>
               <input
                 type="number"
                 step={imageData.dtype === 'float32' ? 0.01 : 1}
-                value={minLevel}
+                value={imageData.dtype === 'float32' ? minLevel.toFixed(2) : Math.round(minLevel)}
                 onChange={(e) => setMinLevel(parseFloat(e.target.value))}
               />
-            </div>
-
-            <div className="control-group">
-              <label>Max Level:</label>
+              <RangeSlider
+                min={imageData.stats.min}
+                max={imageData.stats.max}
+                valueMin={minLevel}
+                valueMax={maxLevel}
+                step={imageData.dtype === 'float32' ? 0.01 : 1}
+                onChange={(newMin, newMax) => {
+                  setMinLevel(newMin)
+                  setMaxLevel(newMax)
+                }}
+              />
               <input
                 type="number"
                 step={imageData.dtype === 'float32' ? 0.01 : 1}
-                value={maxLevel}
+                value={imageData.dtype === 'float32' ? maxLevel.toFixed(2) : Math.round(maxLevel)}
                 onChange={(e) => setMaxLevel(parseFloat(e.target.value))}
               />
+              <button onClick={resetLevels}>Auto</button>
             </div>
-
-            <button onClick={resetLevels}>Auto Levels</button>
 
             {imageData.channels === 1 && (
               <div className="control-group">

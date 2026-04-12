@@ -411,12 +411,72 @@
 }
 
 .viewer-controls input[type="number"] {
-  width: 100px;
+  width: 80px;
+}
+
+.viewer-controls .levels-group {
+  flex: 1;
+  min-width: 300px;
+}
+
+.viewer-controls .levels-group input[type="number"] {
+  width: 70px;
 }
 
 .viewer-controls input[type="file"] {
   font-size: 0.8rem;
   color: #888;
+}
+
+/* Range Slider */
+.range-slider {
+  position: relative;
+  flex: 1;
+  height: 20px;
+  min-width: 120px;
+  cursor: pointer;
+}
+
+.range-slider-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  transform: translateY(-50%);
+  background-color: #333;
+  border-radius: 2px;
+}
+
+.range-slider-range {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  background-color: #646cff;
+  border-radius: 2px;
+}
+
+.range-slider-handle {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  background-color: #646cff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: grab;
+  z-index: 1;
+}
+
+.range-slider-handle:hover {
+  background-color: #535bf2;
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.range-slider-handle:active {
+  cursor: grabbing;
 }
 
 .viewer-controls button {
