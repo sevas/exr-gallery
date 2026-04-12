@@ -221,6 +221,10 @@ function Viewer() {
   const [maxLevel, setMaxLevel] = useState(1)
   const [colormap, setColormap] = useState('gray')
   
+  // Bayer channel filter (null = show all, 'R', 'G1', 'G2', 'B')
+  const [bayerChannel, setBayerChannel] = useState(null)
+  const [isBayerImage, setIsBayerImage] = useState(false)
+  
   // Pixel picker state
   const [mousePos, setMousePos] = useState(null)
   const [pixelValue, setPixelValue] = useState(null)
@@ -352,6 +356,11 @@ function Viewer() {
       setMaxLevel(data.stats.max)
       setZoom(1)
       setPan({ x: 0, y: 0 })
+      
+      // Detect Bayer images by filename
+      const isBayer = name.toLowerCase().includes('bayer')
+      setIsBayerImage(isBayer)
+      setBayerChannel(null)
     } catch (err) {
       console.error('Failed to load image:', err)
     }
@@ -401,28 +410,55 @@ function Viewer() {
 
     const lut = COLORMAPS[colormap] || COLORMAPS.gray
 
-    for (let i = 0; i < width * height; i++) {
-      const srcIdx = i * 4
-      const dstIdx = i * 4
+    // Helper to check if pixel should be shown based on Bayer channel filter
+    const shouldShowPixel = (x, y) => {
+      if (!bayerChannel) return true
+      const evenRow = y % 2 === 0
+      const evenCol = x % 2 === 0
+      switch (bayerChannel) {
+        case 'R': return evenRow && evenCol
+        case 'G1': return evenRow && !evenCol
+        case 'G2': return !evenRow && evenCol
+        case 'B': return !evenRow && !evenCol
+        default: return true
+      }
+    }
 
-      if (channels === 1) {
-        // Grayscale - apply colormap
-        const val = data[srcIdx]
-        const normalized = Math.max(0, Math.min(1, (val - minLevel) / range))
-        const lutIdx = Math.floor(normalized * 255)
-        const color = lut[Math.max(0, Math.min(255, lutIdx))]
-        outputData.data[dstIdx] = color[0]
-        outputData.data[dstIdx + 1] = color[1]
-        outputData.data[dstIdx + 2] = color[2]
-        outputData.data[dstIdx + 3] = 255
-      } else {
-        // RGB - apply level mapping per channel
-        for (let c = 0; c < 3; c++) {
-          const val = data[srcIdx + c]
-          const normalized = Math.max(0, Math.min(1, (val - minLevel) / range))
-          outputData.data[dstIdx + c] = Math.round(normalized * 255)
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = y * width + x
+        const srcIdx = i * 4
+        const dstIdx = i * 4
+
+        const showPixel = shouldShowPixel(x, y)
+
+        if (channels === 1) {
+          // Grayscale - apply colormap
+          if (showPixel) {
+            const val = data[srcIdx]
+            const normalized = Math.max(0, Math.min(1, (val - minLevel) / range))
+            const lutIdx = Math.floor(normalized * 255)
+            const color = lut[Math.max(0, Math.min(255, lutIdx))]
+            outputData.data[dstIdx] = color[0]
+            outputData.data[dstIdx + 1] = color[1]
+            outputData.data[dstIdx + 2] = color[2]
+            outputData.data[dstIdx + 3] = 255
+          } else {
+            // Dim non-selected pixels
+            outputData.data[dstIdx] = 30
+            outputData.data[dstIdx + 1] = 30
+            outputData.data[dstIdx + 2] = 30
+            outputData.data[dstIdx + 3] = 255
+          }
+        } else {
+          // RGB - apply level mapping per channel
+          for (let c = 0; c < 3; c++) {
+            const val = data[srcIdx + c]
+            const normalized = Math.max(0, Math.min(1, (val - minLevel) / range))
+            outputData.data[dstIdx + c] = Math.round(normalized * 255)
+          }
+          outputData.data[dstIdx + 3] = 255
         }
-        outputData.data[dstIdx + 3] = 255
       }
     }
 
@@ -451,7 +487,7 @@ function Viewer() {
     } else {
       ctx.restore()
     }
-  }, [imageData, zoom, pan, minLevel, maxLevel, colormap, selection])
+  }, [imageData, zoom, pan, minLevel, maxLevel, colormap, selection, bayerChannel])
 
   // Helper to convert canvas coords to image coords
   const canvasToImageCoords = useCallback((canvasX, canvasY) => {
@@ -724,6 +760,19 @@ function Viewer() {
                   <option value="gray">Grayscale</option>
                   <option value="viridis">Viridis</option>
                   <option value="plasma">Plasma</option>
+                </select>
+              </div>
+            )}
+
+            {isBayerImage && imageData.channels === 1 && (
+              <div className="control-group">
+                <label>Bayer Channel:</label>
+                <select value={bayerChannel || ''} onChange={(e) => setBayerChannel(e.target.value || null)}>
+                  <option value="">All</option>
+                  <option value="R">R (Red)</option>
+                  <option value="G1">G1 (Green 1)</option>
+                  <option value="G2">G2 (Green 2)</option>
+                  <option value="B">B (Blue)</option>
                 </select>
               </div>
             )}
