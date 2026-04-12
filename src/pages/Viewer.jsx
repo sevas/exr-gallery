@@ -65,9 +65,16 @@ function RangeSlider({ min, max, valueMin, valueMax, onChange, step = 0.01 }) {
   )
 }
 
+// ROI colors for identification
+const ROI_COLORS = [
+  '#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3',
+  '#f38181', '#aa96da', '#fcbad3', '#a8d8ea',
+]
+
 // Histogram display component
 function HistogramDisplay({ histogram, index, onClose }) {
   const canvasRef = useRef(null)
+  const color = ROI_COLORS[index % ROI_COLORS.length]
   
   useEffect(() => {
     const canvas = canvasRef.current
@@ -143,10 +150,10 @@ function HistogramDisplay({ histogram, index, onClose }) {
   if (!histogram) return null
   
   return (
-    <div className="histogram-panel">
-      <div className="histogram-header">
-        <span>ROI {index + 1} ({histogram.numPixels} px)</span>
-        <button onClick={() => onClose(index)}>×</button>
+    <div className="histogram-panel" style={{ borderColor: color }}>
+      <div className="histogram-header" style={{ backgroundColor: color }}>
+        <span style={{ color: '#000' }}>ROI {index + 1} ({histogram.numPixels} px)</span>
+        <button onClick={() => onClose(index)} style={{ color: '#000' }}>×</button>
       </div>
       <canvas ref={canvasRef} width={300} height={100} />
     </div>
@@ -494,8 +501,20 @@ function Viewer() {
 
     ctx.restore()
 
-    // Draw all selection rectangles
-    const drawRect = (sel, color) => {
+    // ROI colors for identification
+    const ROI_COLORS = [
+      '#ff6b6b', // red
+      '#4ecdc4', // teal
+      '#ffe66d', // yellow
+      '#95e1d3', // mint
+      '#f38181', // coral
+      '#aa96da', // purple
+      '#fcbad3', // pink
+      '#a8d8ea', // light blue
+    ]
+
+    // Draw all selection rectangles with numbered labels
+    const drawRect = (sel, color, label) => {
       const x1 = (sel.x1 - width / 2) * zoom + canvas.width / 2 + pan.x
       const y1 = (sel.y1 - height / 2) * zoom + canvas.height / 2 + pan.y
       const x2 = (sel.x2 - width / 2) * zoom + canvas.width / 2 + pan.x
@@ -506,14 +525,27 @@ function Viewer() {
       ctx.setLineDash([5, 5])
       ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
       ctx.setLineDash([])
+      
+      // Draw label background and text
+      if (label) {
+        ctx.font = 'bold 12px sans-serif'
+        const textWidth = ctx.measureText(label).width
+        ctx.fillStyle = color
+        ctx.fillRect(x1, y1 - 18, textWidth + 8, 18)
+        ctx.fillStyle = '#000'
+        ctx.fillText(label, x1 + 4, y1 - 5)
+      }
     }
 
-    // Draw confirmed selections in green
-    selections.forEach(sel => drawRect(sel, '#00ff00'))
+    // Draw confirmed selections with colors
+    selections.forEach((sel, idx) => {
+      const color = ROI_COLORS[idx % ROI_COLORS.length]
+      drawRect(sel, color, `ROI ${idx + 1}`)
+    })
     
-    // Draw current selection being drawn in yellow
+    // Draw current selection being drawn in white
     if (currentSelection) {
-      drawRect(currentSelection, '#ffff00')
+      drawRect(currentSelection, '#ffffff', null)
     }
   }, [imageData, zoom, pan, minLevel, maxLevel, colormap, selections, currentSelection, bayerChannel])
 
