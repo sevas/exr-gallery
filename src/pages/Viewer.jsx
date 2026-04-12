@@ -139,6 +139,12 @@ function Viewer() {
 
   // Sample images available
   const sampleImages = [
+    { name: 'River Landscape', file: 'viewer/photo_river.jpg' },
+    { name: 'River (Grayscale)', file: 'viewer/photo_river_gray.png' },
+    { name: 'Autumn Leaves', file: 'viewer/photo_leaves.jpg' },
+    { name: 'Leaves (Grayscale)', file: 'viewer/photo_leaves_gray.png' },
+    { name: 'Coastal Scene', file: 'viewer/photo_coast.jpg' },
+    { name: 'Coast (Grayscale)', file: 'viewer/photo_coast_gray.png' },
     { name: 'Gradient Gray (PNG)', file: 'viewer/gradient_gray.png' },
     { name: 'Gradient RGB (PNG)', file: 'viewer/gradient_rgb.png' },
     { name: 'Checkerboard (PNG)', file: 'viewer/checkerboard_gray.png' },

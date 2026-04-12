@@ -6,12 +6,44 @@ Creates PNG and EXR test patterns with different characteristics
 import os
 import numpy as np
 from PIL import Image
+import requests
+from io import BytesIO
 
 # Output directory
 OUTPUT_DIR = "public/viewer"
 
 def ensure_output_dir():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+def download_natural_photos():
+    """Download natural photos from picsum.photos"""
+    photos = [
+        {"id": "1015", "name": "photo_river"},      # River landscape
+        {"id": "1039", "name": "photo_leaves"},     # Autumn leaves  
+        {"id": "1043", "name": "photo_coast"},      # Coastal scene
+    ]
+    
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    
+    for photo in photos:
+        try:
+            # Download color version
+            url = f"https://picsum.photos/id/{photo['id']}/800/600.jpg"
+            print(f"Downloading {photo['name']}...")
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            img = Image.open(BytesIO(response.content))
+            img.save(f"{OUTPUT_DIR}/{photo['name']}.jpg", quality=90)
+            print(f"  Created: {OUTPUT_DIR}/{photo['name']}.jpg")
+            
+            # Create grayscale version
+            gray = img.convert('L')
+            gray.save(f"{OUTPUT_DIR}/{photo['name']}_gray.png")
+            print(f"  Created: {OUTPUT_DIR}/{photo['name']}_gray.png")
+            
+        except Exception as e:
+            print(f"  Error downloading {photo['name']}: {e}")
 
 def generate_gradient_gray():
     """256x256 grayscale gradient from black to white"""
@@ -140,6 +172,10 @@ def generate_exr_rgb():
 def main():
     ensure_output_dir()
     print("Generating test images for Image Viewer...\n")
+    
+    # Natural photos
+    download_natural_photos()
+    print()
     
     # PNG images (always work)
     generate_gradient_gray()
