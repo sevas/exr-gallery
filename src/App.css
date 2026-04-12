@@ -541,8 +541,7 @@
   background-color: rgba(0, 0, 0, 0.9);
   border-radius: 6px;
   border: 2px solid #444;
-  overflow: hidden;
-  width: 250px;
+  width: 254px;
 }
 
 .histogram-header {
