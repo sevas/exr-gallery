@@ -573,21 +573,39 @@ function Viewer() {
     if (imgX >= 0 && imgX < imageData.width && imgY >= 0 && imgY < imageData.height) {
       setMousePos({ x: imgX, y: imgY })
       
-      const idx = (imgY * imageData.width + imgX) * 4
-      if (imageData.channels === 1) {
-        setPixelValue({ value: imageData.data[idx] })
+      // Check if pixel matches Bayer channel filter
+      const isSelectedChannel = () => {
+        if (!bayerChannel) return true
+        const evenRow = imgY % 2 === 0
+        const evenCol = imgX % 2 === 0
+        switch (bayerChannel) {
+          case 'R': return evenRow && evenCol
+          case 'G1': return evenRow && !evenCol
+          case 'G2': return !evenRow && evenCol
+          case 'B': return !evenRow && !evenCol
+          default: return true
+        }
+      }
+
+      if (isSelectedChannel()) {
+        const idx = (imgY * imageData.width + imgX) * 4
+        if (imageData.channels === 1) {
+          setPixelValue({ value: imageData.data[idx] })
+        } else {
+          setPixelValue({
+            r: imageData.data[idx],
+            g: imageData.data[idx + 1],
+            b: imageData.data[idx + 2]
+          })
+        }
       } else {
-        setPixelValue({
-          r: imageData.data[idx],
-          g: imageData.data[idx + 1],
-          b: imageData.data[idx + 2]
-        })
+        setPixelValue(null)
       }
     } else {
       setMousePos(null)
       setPixelValue(null)
     }
-  }, [isDragging, isSelecting, selectionStart, dragStart, pan, zoom, imageData, canvasToImageCoords])
+  }, [isDragging, isSelecting, selectionStart, dragStart, pan, zoom, imageData, canvasToImageCoords, bayerChannel])
 
   const handleMouseUp = useCallback(() => {
     if (isSelecting && selection) {
