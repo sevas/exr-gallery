@@ -15,6 +15,28 @@ OUTPUT_DIR = "public/viewer"
 def ensure_output_dir():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+def rgb_to_bayer_rggb(rgb_array):
+    """
+    Extract RGGB Bayer pattern from RGB image.
+    Pattern:
+      Row 0: R G R G ...
+      Row 1: G B G B ...
+      Row 2: R G R G ...
+      ...
+    """
+    height, width = rgb_array.shape[:2]
+    bayer = np.zeros((height, width), dtype=rgb_array.dtype)
+    
+    # Even rows: R at even cols, G at odd cols
+    bayer[0::2, 0::2] = rgb_array[0::2, 0::2, 0]  # R
+    bayer[0::2, 1::2] = rgb_array[0::2, 1::2, 1]  # G
+    
+    # Odd rows: G at even cols, B at odd cols
+    bayer[1::2, 0::2] = rgb_array[1::2, 0::2, 1]  # G
+    bayer[1::2, 1::2] = rgb_array[1::2, 1::2, 2]  # B
+    
+    return bayer
+
 def download_natural_photos():
     """Download natural photos from picsum.photos"""
     photos = [
@@ -41,6 +63,13 @@ def download_natural_photos():
             gray = img.convert('L')
             gray.save(f"{OUTPUT_DIR}/{photo['name']}_gray.png")
             print(f"  Created: {OUTPUT_DIR}/{photo['name']}_gray.png")
+            
+            # Create RGGB Bayer pattern version
+            rgb_array = np.array(img)
+            bayer = rgb_to_bayer_rggb(rgb_array)
+            bayer_img = Image.fromarray(bayer, mode='L')
+            bayer_img.save(f"{OUTPUT_DIR}/{photo['name']}_bayer.png")
+            print(f"  Created: {OUTPUT_DIR}/{photo['name']}_bayer.png")
             
         except Exception as e:
             print(f"  Error downloading {photo['name']}: {e}")
